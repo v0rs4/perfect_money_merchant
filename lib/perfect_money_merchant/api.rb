@@ -12,13 +12,24 @@ class PerfectMoneyMerchant::Api
 
 	API_URL = 'https://perfectmoney.is'.freeze
 	METHODS = {
-			balance: 'acct/balance.asp',
-			transfer: 'acct/confirm.asp'
+			balance: {
+					path: 'acct/balance.asp',
+					donwcase_params: false
+			},
+			transfer: {
+					path: 'acct/confirm.asp',
+					donwcase_params: true
+			}
 	}
 
 	def method_missing(*args, &block)
 		if METHODS.include?(args[0])
-			api_call(METHODS[args[0]], args[1])
+			response_hash = api_call(METHODS[args[0]][:path], args[1])
+			if METHODS[args[0]][:donwcase_params]
+				response_hash.map { |k, v| [k.downcase, v] }.inject(Hashie::Mash.new) { |hash, param| hash.merge!(param[0] => param[1]) }
+			else
+				Hashie::Mash.new(response_hash)
+			end
 		else
 			super
 		end

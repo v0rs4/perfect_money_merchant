@@ -44,6 +44,7 @@ class PerfectMoneyMerchant::SCIResponse
 		check_on_secret_key!
 		check_on_verification_code!
 		check_on_v2_hash!
+		check_on_payment_purpose!
 		true
 	end
 
@@ -51,10 +52,26 @@ class PerfectMoneyMerchant::SCIResponse
 
 	private
 
-	def check_on_secret_key!
-		if secret_key.nil?
-			raise StandardError.new('secret key is nil')
+	def check_on_payment_purpose!
+		if respond_to?(:payment_purpose)
+			if payment_purpose.nil? or payment_purpose.blank?
+				raise StandardError.new('payment_purpose is nil')
+			end
+		else
+			raise StandardError.new('payment_purpose is not defined')
 		end
+
+	end
+
+	def check_on_secret_key!
+		if respond_to?(:secret_key)
+			if secret_key.nil?
+				raise StandardError.new('secret key is nil')
+			end
+		else
+			raise StandardError.new('secret key is not defined')
+		end
+
 	end
 
 	def check_on_verification_code!
@@ -63,21 +80,23 @@ class PerfectMoneyMerchant::SCIResponse
 			unless PerfectMoneyMerchant::SCI.generate_verification_code(verification_values) == verification_code
 				raise StandardError.new('verification code invalid')
 			end
+		else
+			raise StandardError.new('verification code or verification_fields is empty')
 		end
 	end
 
 	def check_on_v2_hash!
 		v2_hash = Digest::MD5.hexdigest(
-				[
-						payment_id,
-						payee_account,
-						payment_amount,
-						payment_units,
-						payment_batch_num,
-						payer_account,
-						Digest::MD5.hexdigest(secret_key).upcase,
-						timestampgmt
-				].join(':')
+			[
+				payment_id,
+				payee_account,
+				payment_amount,
+				payment_units,
+				payment_batch_num,
+				payer_account,
+				Digest::MD5.hexdigest(secret_key).upcase,
+				timestampgmt
+			].join(':')
 		).upcase
 
 		unless self.v2_hash == v2_hash
@@ -87,11 +106,11 @@ class PerfectMoneyMerchant::SCIResponse
 
 	def create_payment!
 		PerfectMoneyMerchant::Payment.create!(
-				payment_batch_num: payment_batch_num,
-				payment_id: payment_id,
-				payment_amount: payment_amount,
-				payer_account: payer_account,
-				payee_account: payee_account
+			payment_batch_num: payment_batch_num,
+			payment_id: payment_id,
+			payment_amount: payment_amount,
+			payer_account: payer_account,
+			payee_account: payee_account
 		)
 	end
 end # end Response

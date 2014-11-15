@@ -6,18 +6,20 @@ module PerfectMoneyMerchant
 			def configure
 				@config ||= Configuration.new
 				yield(@config) if block_given?
-				valid_fields!
+				# valid_fields!
 				@config
-			end
-
-			def valid_fields!
-				if FIELDS.map { |field_name| @config.instance_variable_get("@#{field_name}") }.include?(nil)
-					raise StandardError.new('all fields must be initiated')
-				end
 			end
 
 			def config
 				@config
+			end
+
+			def valid_fields!
+				raise StandardError.new('verification_secret is nil') if @config.verification_secret.nil?
+
+				# if FIELDS.map { |field_name| @config.instance_variable_get("@#{field_name}") }.include?(nil)
+				# 	raise StandardError.new('all fields must be initiated')
+				# end
 			end
 		end
 

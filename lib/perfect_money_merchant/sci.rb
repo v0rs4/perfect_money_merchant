@@ -21,7 +21,7 @@ module PerfectMoneyMerchant
 		attr_reader :nopayment_url_method
 		attr_reader :suggested_memo
 		attr_reader :baggage_fields
-		attr_reader :purpose
+		attr_reader :payment_purpose
 
 		def initialize(attributes = {})
 			set_defaults
@@ -33,6 +33,9 @@ module PerfectMoneyMerchant
 			set_title(attributes[:title]) if attributes[:title]
 			set_additional(attributes[:additional]) if attributes[:additional]
 			set_verification(attributes[:verification]) if attributes[:verification]
+			set_purpose(attributes[:purpose]) if attributes[:purpose]
+
+			verify_fields!
 		end
 
 		def set_price(price)
@@ -67,8 +70,7 @@ module PerfectMoneyMerchant
 			singleton_class.class_eval do
 				attr_accessor name
 			end
-			send("#{name}=", value)
-
+			instance_variable_set("@#{name}", value)
 			set_baggage_field(name)
 		end
 
@@ -83,20 +85,30 @@ module PerfectMoneyMerchant
 
 		private
 
+		def verify_fields!
+			raise StandardError.new('payee_name is nil') if payee_name.nil?
+			raise StandardError.new('suggested_memo is nil') if suggested_memo.nil?
+			raise StandardError.new('payment_units is nil') if payment_units.nil?
+			raise StandardError.new('payee_account is nil') if payee_account.nil?
+			raise StandardError.new('status_url is nil') if status_url.nil?
+			raise StandardError.new('payment_url is nil') if payment_url.nil?
+			raise StandardError.new('payment_url_method is nil') if payment_url_method.nil?
+			raise StandardError.new('nopayment_url is nil') if nopayment_url.nil?
+			raise StandardError.new('nopayment_url_method is nil') if nopayment_url_method.nil?
+			raise StandardError.new('payment_purpose is nil') if payment_purpose.nil?
+		end
+
 		def set_defaults
 			config = Configuration.config
 
-			@payee_name = config.payee_name
-			@suggested_memo = config.suggested_memo
-			@payment_units = config.payment_units
-			@payee_account = ''
-			@payment_id = ''
-			@status_url = config.status_url
-			@payment_url = config.payment_url
-			@payment_url_method = config.payment_url_method
-			@nopayment_url = config.nopayment_url
-			@nopayment_url_method = config.nopayment_url_method
-			@payment_purpose = ''
+			@payee_name = config.payee_name || 'Perfect Money Merchant'
+			@suggested_memo = config.suggested_memo || 'Perfect Money Merchant Payment'
+			@payment_units = config.payment_units || 'USD'
+			@status_url = config.status_url || '/perfect_money_merchant/payment/status'
+			@payment_url = config.payment_url || '/perfect_money_merchant/payment/success'
+			@payment_url_method = config.payment_url_method || 'POST'
+			@nopayment_url = config.nopayment_url || '/perfect_money_merchant/payment/error'
+			@nopayment_url_method = config.nopayment_url_method || 'POST'
 			@baggage_fields = ''
 		end
 

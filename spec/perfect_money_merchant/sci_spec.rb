@@ -1,10 +1,20 @@
 require 'spec_helper'
 
 RSpec.describe PerfectMoneyMerchant::SCI do
+	let(:sci) do
+		PerfectMoneyMerchant::SCI.new(
+				payee: 'U1234567',
+				price: 10.0,
+				currency: 'usd',
+				additional: {
+						merchandise_name: 'oak field'
+				},
+				purpose: 'merchandise',
+				verification: [:merchandise_name]
+		)
+	end
 
 	context '#set_field' do
-		let(:sci) { PerfectMoneyMerchant::SCI.new }
-
 		before(:example) do
 			sci.set_field(:some_new_field, 'some_value')
 		end
@@ -19,17 +29,6 @@ RSpec.describe PerfectMoneyMerchant::SCI do
 	end
 
 	describe '#initialize' do
-		let(:sci) do
-			PerfectMoneyMerchant::SCI.new(
-					price: 10.0,
-					currency: 'usd',
-					additional: {
-							merchandise_name: 'oak field'
-					},
-					verification: [:merchandise_name]
-			)
-		end
-
 		it 'should has correct payment_amount' do
 			expect(sci.payment_amount).to eql(10.0)
 		end

@@ -14,6 +14,6 @@ class PerfectMoneyMerchantGenerator < Rails::Generators::Base
 	end
 
 	def create_migration_file
-		migration_template 'migration.rb', 'db/migrate/create_perfect_money_merchant_tables.rb'
+		migration_template 'migration.rb', 'db/migrate/create_perfect_money_merchant_accounts_and_account_units_and_payments.rb'
 	end
 end

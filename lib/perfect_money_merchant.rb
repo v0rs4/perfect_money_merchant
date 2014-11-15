@@ -14,7 +14,7 @@ module PerfectMoneyMerchant
 	end
 end
 
-# require 'perfect_money_merchant/railtie' if defined?(Rails)
+require 'perfect_money_merchant/railtie'
 require 'perfect_money_merchant/engine'
 require 'perfect_money_merchant/configuration'
 require 'perfect_money_merchant/api'

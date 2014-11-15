@@ -5,17 +5,21 @@ module PerfectMoneyMerchant
 
 			belongs_to :account, class_name: 'Account', foreign_key: :account_id
 
+			validates :currency, :code_number, presence: true
+			validates :currency, inclusion: { in: %w(usd eur) }
+			validates :code_number, format: { with: /\A[EU]\d{7}\z/ }
+
 			# transfer money to other PerfectMoney account
 			# @param [String] PerfectMoney account code number
 			# @param [Float] just desirable amount to trasnfer
 			# @return [Hash] PerfectMoney http response body
 			def transfer!(payee_account, amount)
 				Api.new.transfer(
-						AccountID: self.account.login,
-						PassPhrase: self.account.password,
-						Payer_Account: self.code_number,
-						Payee_Account: payee_account,
-						Amount: amount
+					AccountID: self.account.login,
+					PassPhrase: self.account.password,
+					Payer_Account: self.code_number,
+					Payee_Account: payee_account,
+					Amount: amount
 				)
 			end
 
@@ -48,7 +52,10 @@ module PerfectMoneyMerchant
 
 		self.table_name = 'perfect_money_merchant_accounts'
 
-		has_many :units, class_name: 'Account::Unit', foreign_key: :account_id
+		has_many :units, dependent: :destroy
+		accepts_nested_attributes_for :units, :reject_if => :all_blank, :allow_destroy => true
+
+		validates :login, :password, :secret_key, presence: true
 
 		# Synchronize account unit balances with Perfect Money server via PerfectMoneyMerchant::Api
 		# @see PerfectMoneyMerchant::Api PerfectMoneyMerchant Api
@@ -76,8 +83,15 @@ module PerfectMoneyMerchant
 					exception.add_error(:unit, :not_found)
 					raise exception
 				else
-					unit.transfer!(payee_account, amount).tap do
+					unit.transfer!(payee_account, amount).tap do |params|
 						sync_with_pm_server
+						Payment.create(
+							payment_batch_num: params.payment_batch_num,
+							payment_id: params.payment_id,
+							payment_amount: params.payment_amount,
+							payer_account: params.payer_account,
+							payee_account: params.payee_account
+						)
 					end
 				end
 			else
@@ -92,11 +106,12 @@ module PerfectMoneyMerchant
 			# @param [String] currency currency like 'usd' or 'eur'
 			# @return [String] PerfectMoney account code number
 			def obtain_deposit_account(currency)
+				currency = currency.to_s.downcase
 				unit = Account::Unit.
-						joins(:account).
-						where.not(perfect_money_merchant_accounts: { secret_key: nil }).
-						where(currency: currency).
-						order('balance ASC').take(1).first
+					joins(:account).
+					where.not(perfect_money_merchant_accounts: { secret_key: nil }).
+					where(currency: currency).
+					order('balance ASC').take(1).first
 				if unit
 					unit.code_number
 				else
@@ -116,11 +131,11 @@ module PerfectMoneyMerchant
 				if payee_account =~ /\A([UE])\d{7}\z/
 					currency = $1 == 'U' ? 'usd' : 'eur'
 					account = joins(:units).
-							where.not(login: nil, password: nil).
-							where(perfect_money_merchant_account_units: { currency: currency }).
-							where('perfect_money_merchant_account_units.balance > ?', amount).
-							order('perfect_money_merchant_account_units.balance DESC').
-							take(1).first
+						where.not(login: nil, password: nil).
+						where(perfect_money_merchant_account_units: { currency: currency }).
+						where('perfect_money_merchant_account_units.balance > ?', amount).
+						order('perfect_money_merchant_account_units.balance DESC').
+						take(1).first
 					if account.nil?
 						raise StandardError.new('account nil')
 					else
