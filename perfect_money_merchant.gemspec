@@ -6,8 +6,8 @@ require 'perfect_money_merchant/version'
 Gem::Specification.new do |spec|
 	spec.name = 'perfect_money_merchant'
 	spec.version = PerfectMoneyMerchant::VERSION
-	spec.authors = ['BroderickBrockman']
-	spec.email = ['broderickbrockman@gmail.com']
+	spec.authors = ['Vladislav Pauk']
+	spec.email = ['vladislavpauk@gmail.com']
 	spec.summary = %q{blah blah}
 	spec.description = %q{blah blah blah blah}
 	spec.homepage = ''
